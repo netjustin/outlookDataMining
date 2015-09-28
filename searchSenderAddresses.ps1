@@ -1,42 +1,44 @@
 Add-type -assembly "Microsoft.Office.Interop.Outlook" | out-null
 $namespace = new-object -comobject outlook.application
-$MAPI = $namespace.GetNamespace("MAPI")
-$Inbox = $MAPI.GetDefaultFolder([Microsoft.Office.Interop.Outlook.OlDefaultFolders]::olFolderInbox).Items
+$MAPI = $namespace.GetNamespace( "MAPI" )
+$Inbox = $MAPI.GetDefaultFolder( [Microsoft.Office.Interop.Outlook.OlDefaultFolders]::olFolderInbox ).Items
 # iterate mail items, returning sender
-$Senders = `
+$objSenders = `
  foreach ( $MailItem in $Inbox ) { 
   $MailItem.SenderEmailAddress 
  }
 $namespace.Quit()
-$SendersFiltered = `
-($Senders | select -Unique) | where { 
- $pref = $_.split("@")[0]; 
- $suff = $_.split("@")[1]; 
+$objSendersFiltered = `
+( $objSenders | select -Unique ) | where { 
+ $strPrefix = $_.split("@")[0]; 
+ $strSuffix = $_.split("@")[1]; 
  $boolWordMatch = $False;
  # per-user custom dictionary 
- $arrStrDict = ( `
+ $arrStrFilterWords = ( `
  'support','ship','info','service','billing','customer','account', `
  'sales','reservation','email','upgrade','message','subscribe'
  )
- foreach ( $dictionaryWordEx in $arrStrDict ) {
-  if ($pref -match $dictionaryWordEx ) { 
+ foreach ( $dictionaryWordEx in $arrStrFilterWords ) {
+  if ( $strPrefix -match $dictionaryWordEx ) { 
    $boolWordMatch = $True 
    break
-  } 
- }
- # general dictionary of computerized address indicators
+  } #if
+ } #foreach
+ # char indicators of computerized address 
  $boolCharMatch = $False
  $arrCharDict = ( "-", "=", "+" )
+if ( $boolWordMatch -ne $True ) {
  foreach ( $dictionaryChar in $arrCharDict ) {
-  if ( $pref.contains($dictionaryChar) ) { 
+  if ( $strPrefix.contains( $dictionaryChar ) ) { 
    $boolCharMatch = $True 
    break
-  }
- }
+   } #if
+  } #foreach
+ } #if
  $boolWordMatch -eq $False -and `
  $boolCharMatch -eq $False -and `
- $suff -ne $null -and `
- $pref -notmatch $suff.split(".")[-2]
+ $strSuffix -ne $null -and `
+ $strPrefix -notmatch $strSuffix.split(".")[-2]
 }
 # sample output
-$SendersFiltered | select -first 1
+$objSendersFiltered | select -first 1
