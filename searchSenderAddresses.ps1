@@ -4,9 +4,9 @@ $MAPI = $namespace.GetNamespace("MAPI")
 $Inbox = $MAPI.GetDefaultFolder([Microsoft.Office.Interop.Outlook.OlDefaultFolders]::olFolderInbox).Items
 # iterate mail items, returning sender
 $Senders = `
-    foreach ( $MailItem in $Inbox ) { 
-        $MailItem.SenderEmailAddress 
-    }
+ foreach ( $MailItem in $Inbox ) { 
+  $MailItem.SenderEmailAddress 
+ }
 $namespace.Quit()
 $SendersFiltered = `
 ($Senders | select -Unique) | where { 
@@ -15,18 +15,22 @@ $SendersFiltered = `
  $boolWordMatch = $False;
  # per-user custom dictionary 
  $arrStrDict = ( `
- 'support','ship','info','service','billing','customer','account','sales', `
- 'reservation','email','upgrade','message','subscribe'
+ 'support','ship','info','service','billing','customer','account', `
+ 'sales','reservation','email','upgrade','message','subscribe'
  )
  foreach ( $dictionaryWordEx in $arrStrDict ) {
-  if ($pref -match $dictionaryWordEx ) { $boolWordMatch = $True 
+  if ($pref -match $dictionaryWordEx ) { 
+   $boolWordMatch = $True 
+   break
   } 
  }
  # general dictionary of computerized address indicators
  $boolCharMatch = $False
  $arrCharDict = ( "-", "=", "+" )
  foreach ( $dictionaryChar in $arrCharDict ) {
-  if ( $pref.contains($dictionaryChar) ) { $boolCharMatch = $True 
+  if ( $pref.contains($dictionaryChar) ) { 
+   $boolCharMatch = $True 
+   break
   }
  }
  $boolWordMatch -eq $False -and `
