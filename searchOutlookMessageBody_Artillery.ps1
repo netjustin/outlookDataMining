@@ -6,17 +6,21 @@
 
  <# global(s)	#>
 
-$outFile = "Artillery.csv"
-
+$outFile 			= "Artillery.csv"
+# $DeleteAfterExport 	= $True
+$ConstrainResults	= $False
+$ConstrainCount		= 10
 
 <# helper func	#>
 
 function ArtilleryEmailBodyToCsv($s) 
-{	# trim and decorate elements of the alert
-	$s = $s -replace '\[!\] Artillery has detected an attack from IP address: ',''
-	$s = $s -replace 'for a connection on a honeypot port: ',''
+{	# trim and decorate socket pair elements from body
+	$r = '\[!\] Artillery has (detected an attack from|blocked \(and blacklisted\) the) IP address: '
+	$s = $s -replace $r, ''
+	$r = 'for (a connection on|connecting to) a honeypot (restricted )?port: '
+	$s = $s -replace $r,''
 	$s = $s -replace ' ','","'
-	$s = "{0}{1}{0}" -f [char]34, $s	# enquote
+	$s = "{0}{1}{0}" -f '"', $s	# enquote
 	return $s
 }
 
@@ -28,11 +32,15 @@ $namespace 	= new-object -comobject outlook.application
 $MAPI 		= $namespace.GetNamespace("MAPI")
 $Inbox 		= $MAPI.GetDefaultFolder([Microsoft.Office.Interop.Outlook.OlDefaultFolders]::olFolderInbox).Items
 # iterate mail items, returning header
+$i=0
 $Bodies 	= `
 	foreach ( $MailItem in $Inbox ) { 
-		if 	( 	$MailItem 		-ne $Null -and `
-				$MailItem.Body 	-ne $Null) { 
-					$MailItem.Body 	# return non-null items
+		if 	( 	($i++ -lt $ConstrainCount -or $ConstrainResults -eq $False) -and `
+				$MailItem 		-ne $Null -and `
+				$MailItem.Body 	-ne $Null -and `
+				$MailItem.Subject -match 'Artillery has detected an attack' )
+				{ 	# return matching items
+					$MailItem.Body 	
 				}
 	}
 $namespace.Quit()
